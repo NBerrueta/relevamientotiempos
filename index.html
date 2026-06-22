@@ -45,10 +45,28 @@
         <div class="field"><label>Operador</label><input type="text" id="operador" placeholder="Nombre operador" /></div>
     </div>
     <div class="grid2">
+      <div class="field">
+        <label>Sector</label>
+        <select id="sector">
+          <option>Mecánica</option>
+          <option>Montaje</option>
+          <option>Prueba Hidráulica</option>
+          <option>Engrase</option>
+          <option>Lavado</option>
+          <option>Granallado</option>
+          <option>Pintura</option>
+        </select>
+      </div>
       <div class="field"><label>Orden</label><input type="text" id="orden" placeholder="N° Orden" /></div>
-      <div class="field"><label>Material</label><input type="text" id="material" placeholder="Cod. Material" /></div>
     </div>
-    <div class="field"><label>Descripción</label><input type="text" id="obs" placeholder="Detalle de la tarea..." /></div>
+    <div class="grid2">
+      <div class="field"><label>Material</label><input type="text" id="material" placeholder="Cod. Material" /></div>
+      <div class="field"><label>Puesto de Trabajo</label><input type="text" id="puesto" placeholder="Ej: PHID 0007" /></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Cantidad de Personas</label><input type="number" id="personas" value="1" min="1" /></div>
+      <div class="field"><label>Descripción</label><input type="text" id="obs" placeholder="Detalle de la tarea..." /></div>
+    </div>
     <div class="field">
       <label>Tipo de Tarea (Presionar para guardar tramo)</label>
       <div class="tipo-grid" id="tipoGrid">
@@ -129,8 +147,11 @@
       id: Date.now(),
       usuario: document.getElementById('usuario').value.trim() || '-',
       operador: document.getElementById('operador').value.trim() || '-',
+      sector: document.getElementById('sector').value,
       orden: document.getElementById('orden').value.trim() || '-',
       material: document.getElementById('material').value.trim() || '-',
+      puesto: document.getElementById('puesto').value.trim() || '-',
+      personas: document.getElementById('personas').value || '1',
       desc: document.getElementById('obs').value.trim() || '-',
       tipo: document.querySelector('.tipo-grid .tipo-btn.selected').textContent,
       duracion: fmt(seconds),
@@ -182,19 +203,32 @@
 
     const todayStr = new Date().toLocaleDateString('es-AR');
 
-    const rows = logs.map(l => [
-        l.usuario === '-' ? usuario : l.usuario,
-        todayStr,
-        l.timestamp,
-        l.operador === '-' ? operador : l.operador,
-        l.orden === '-' ? orden : l.orden,
-        l.material === '-' ? material : l.material,
-        l.tipo,
-        l.duracion,
-        l.desc,
-        '-',
-        '1'
-    ]);
+    // MAPEO SECUENCIAL ESTRICTO PARA LAS COLUMNAS DE LA A HASTA LA L
+    const rows = logs.map(l => {
+        const finalUsuario = l.usuario === '-' ? usuario : l.usuario;
+        const finalOperador = l.operador === '-' ? operador : l.operador;
+        const finalSector = l.sector;
+        const finalOrden = l.orden === '-' ? orden : l.orden;
+        const finalMaterial = l.material === '-' ? material : l.material;
+        const finalPuesto = l.puesto === '-' ? document.getElementById('puesto').value.trim() || '-' : l.puesto;
+        const finalPersonas = l.personas === '1' ? document.getElementById('personas').value || '1' : l.personas;
+        const finalDesc = l.desc === '-' ? document.getElementById('obs').value.trim() || '-' : l.desc;
+
+        return [
+            finalUsuario,                              // Col A: Usuario
+            todayStr,                                  // Col B: Fecha (DD/MM/YYYY)
+            l.timestamp,                               // Col C: Hora (HH:MM:SS)
+            finalSector,                               // Col D: Sector
+            finalOrden,                                // Col E: Orden
+            finalMaterial,                             // Col F: Material
+            finalPuesto,                               // Col G: Puesto de Trabajo
+            finalPersonas,                             // Col H: Cantidad de Personas
+            l.tipo,                                    // Col I: Tipo de Tarea
+            l.duracion,                                // Col J: Duración
+            "",                                        // Col K: Acumulado (vacio para fórmulas de la hoja)
+            `[Operador: ${finalOperador}] ${finalDesc}` // Col L: Observaciones / Descripción
+        ];
+    });
 
     try {
       await fetch(SCRIPT_URL, {
