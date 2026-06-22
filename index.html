@@ -50,15 +50,14 @@
     </div>
     <div class="field"><label>Descripción</label><input type="text" id="obs" placeholder="Detalle de la tarea..." /></div>
     <div class="field">
-      <label>Tipo de Tarea</label>
+      <label>Tipo de Tarea (Presionar para guardar tramo)</label>
       <div class="tipo-grid" id="tipoGrid">
-        <button class="tipo-btn selected" onclick="selectTipo(this)">Preparación</button>
+        <button class="tipo-btn" onclick="selectTipo(this)">Preparación</button>
         <button class="tipo-btn" onclick="selectTipo(this)">Trabajo</button>
         <button class="tipo-btn" onclick="selectTipo(this)">Ineficiencias</button>
         <button class="tipo-btn" onclick="selectTipo(this)">Retrabajo</button>
       </div>
     </div>
-    <button class="primary" style="width:100%" onclick="guardarTramo()">Guardar Tramo</button>
   </div>
 
   <div class="card">
@@ -73,6 +72,8 @@
 
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4vh8NKPpiuWk4IIv-TDj63U_h40KjLvkOm4tm3GDLJSpdEBR4_lFcKlW3SGcEIpGY/exec';
+  let startTime = null;
+  let accumulatedSeconds = 0;
   let seconds = 0, running = false, interval = null;
   let logs = JSON.parse(localStorage.getItem('timelogs_v5') || '[]');
 
@@ -81,23 +82,48 @@
   function toggleTimer() {
     running = !running;
     if (running) {
-        interval = setInterval(() => { seconds++; document.getElementById('display').textContent = fmt(seconds); }, 1000);
+        startTime = Date.now();
+        interval = setInterval(tick, 500); // Revisa dos veces por segundo para mantenerse al día
         document.getElementById('btnToggle').textContent = 'Pausar';
     } else {
         clearInterval(interval);
+        accumulatedSeconds += Math.floor((Date.now() - startTime) / 1000);
+        seconds = accumulatedSeconds;
         document.getElementById('btnToggle').textContent = 'Continuar';
     }
   }
 
-  function resetTimer() { seconds = 0; document.getElementById('display').textContent = '00:00:00'; }
+  function tick() {
+    if (!running) return;
+    let elapsed = Math.floor((Date.now() - startTime) / 1000);
+    seconds = accumulatedSeconds + elapsed;
+    document.getElementById('display').textContent = fmt(seconds);
+  }
+
+  function resetTimer() { 
+    accumulatedSeconds = 0;
+    seconds = 0; 
+    if (running) {
+        startTime = Date.now();
+    } else {
+        startTime = null;
+        document.getElementById('btnToggle').textContent = 'Iniciar';
+    }
+    document.getElementById('display').textContent = '00:00:00'; 
+  }
 
   function selectTipo(btn) {
     document.querySelectorAll('.tipo-grid .tipo-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
+    guardarTramo();
   }
 
   function guardarTramo() {
-    if (seconds === 0) { showToast("Iniciá el cronómetro primero"); return; }
+    if (seconds === 0) { 
+        showToast("Iniciá el cronómetro primero"); 
+        document.querySelectorAll('.tipo-grid .tipo-btn').forEach(b => b.classList.remove('selected'));
+        return; 
+    }
     
     const rec = {
       id: Date.now(),
@@ -106,15 +132,18 @@
       orden: document.getElementById('orden').value.trim() || '-',
       material: document.getElementById('material').value.trim() || '-',
       desc: document.getElementById('obs').value.trim() || '-',
-      tipo: document.querySelector('.tipo-btn.selected').textContent,
+      tipo: document.querySelector('.tipo-grid .tipo-btn.selected').textContent,
       duracion: fmt(seconds),
       timestamp: new Date().toLocaleTimeString('es-AR', {hour12: false})
     };
     logs.push(rec);
     localStorage.setItem('timelogs_v5', JSON.stringify(logs));
+    
     resetTimer();
     renderLogs();
     showToast("Tramo guardado localmente");
+    
+    document.querySelectorAll('.tipo-grid .tipo-btn').forEach(b => b.classList.remove('selected'));
   }
 
   function renderLogs() {
@@ -135,19 +164,22 @@
     const orden = document.getElementById('orden').value.trim();
     const material = document.getElementById('material').value.trim();
 
-    // Bloqueo de validación: Obligatorios solo al subir
     if (!usuario || !operador || !orden || !material) {
         showToast("Completar Usuario, Operador, Orden y Material antes de subir");
         return;
     }
 
-    if (running) toggleTimer(); // Detiene el cronómetro si estaba corriendo
+    if (running) {
+        clearInterval(interval);
+        running = false;
+    }
+    resetTimer();
+    document.getElementById('btnToggle').textContent = 'Iniciar';
 
     const btn = document.getElementById('btnSheets');
     btn.disabled = true;
     btn.textContent = 'Subiendo...';
 
-    // Si los tramos se guardaron vacíos, se auto-completan con lo que el usuario escribió al final
     const rows = logs.map(l => [
         l.usuario === '-' ? usuario : l.usuario,
         l.operador === '-' ? operador : l.operador,
