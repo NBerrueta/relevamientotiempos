@@ -22,7 +22,6 @@
   select:focus, input:focus, textarea:focus { outline: none; border-color: #636366; background: #3a3a3c; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   
-  /* Tabla de Tramos y Menú de opciones */
   .log-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #f2f2f7; }
   .log-table th { text-align: left; color: #aeaeb2; padding: 5px; border-bottom: 1px solid #3a3a3c; }
   .log-table td { padding: 8px 5px; border-bottom: 1px solid #2c2c2e; vertical-align: middle; }
@@ -33,7 +32,6 @@
   .menu-dropdown button { display: block; width: 100%; text-align: left; padding: 10px 14px; font-size: 14px; background: none; border: none; cursor: pointer; color: #f2f2f7; font-weight: 500; }
   .menu-dropdown button:hover { background: #3a3a3c; }
   
-  /* Ventana Modal de Edición */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
   .modal-overlay.open { display: flex; }
   .modal { background: #1c1c1e; border-radius: 14px; padding: 1.25rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
@@ -341,7 +339,6 @@
     const btn = document.getElementById('btnSheets'); btn.disabled = true; btn.textContent = 'Subiendo...';
     const todayStr = new Date().toLocaleDateString('es-AR');
 
-    // RECONSTRUCCIÓN EXACTA DEL ORDEN DE ÍNDICES QUE EL SCRIPT DE GOOGLE ESPERA
     const rows = logs.map(l => {
         const finalUsuario = l.usuario === '-' ? usuario : l.usuario;
         const finalOperador = l.operador === '-' ? operador : l.operador;
@@ -352,18 +349,20 @@
         const finalPersonas = l.personas === '1' ? document.getElementById('personas').value || '1' : l.personas;
         const finalDesc = l.desc === '-' ? document.getElementById('obs').value.trim() || '-' : l.desc;
 
+        // Estructura de mapeo nativa sincronizada con Google Apps Script
         return [
-            finalUsuario,                                // Index 0 -> Col A (Usuario)
-            todayStr,                                    // Index 1 -> Col B (Fecha)
-            l.timestamp,                                 // Index 2 -> Col C (Hora)
-            finalSector,                                 // Index 3 -> Col D (Sector)
-            finalOrden,                                  // Index 4 -> Col E (Orden)
-            finalMaterial,                               // Index 5 -> Col F (Material)
-            l.tipo,                                      // Index 6 -> Col I (Tipo de Tarea)
-            l.duracion,                                  // Index 7 -> Col J (Duración)
-            `[Operador: ${finalOperador}] ${finalDesc}`,  // Index 8 -> Col L (Observaciones)
-            finalPuesto,                                 // Index 9 -> Col G (Puesto de Trabajo)
-            finalPersonas                                // Index 10 -> Col H (Cantidad de Personas)
+            finalUsuario,   // Index 0 -> Col A
+            todayStr,       // Index 1 -> Col B
+            l.timestamp,    // Index 2 -> Col C
+            finalSector,    // Index 3 -> Col D
+            finalOrden,     // Index 4 -> Col E
+            finalMaterial,  // Index 5 -> Col F
+            l.tipo,         // Index 6 -> Col I
+            l.duracion,     // Index 7 -> Col J
+            finalDesc,      // Index 8 -> Col M (Observaciones limpias)
+            finalPuesto,    // Index 9 -> Col G
+            finalPersonas,  // Index 10 -> Col H
+            finalOperador   // Index 11 -> Nueva Col L (Operador)
         ];
     });
 
@@ -383,7 +382,6 @@
     }
   }
 
-  // Formateador automático HH:MM:SS para el cuadro modal
   document.getElementById('editDuracion').addEventListener('input', function(e) {
     var raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 6); var formatted = '';
     if (raw.length <= 2) { formatted = raw; } 
