@@ -349,20 +349,21 @@
         const finalPersonas = l.personas === '1' ? document.getElementById('personas').value || '1' : l.personas;
         const finalDesc = l.desc === '-' ? document.getElementById('obs').value.trim() || '-' : l.desc;
 
-        // Estructura de mapeo nativa sincronizada con Google Apps Script
+        // NUEVO EMBARQUE EN ORDEN TOTALMENTE SECUENCIAL
         return [
-            finalUsuario,   // Index 0 -> Col A
-            todayStr,       // Index 1 -> Col B
-            l.timestamp,    // Index 2 -> Col C
-            finalSector,    // Index 3 -> Col D
-            finalOrden,     // Index 4 -> Col E
-            finalMaterial,  // Index 5 -> Col F
-            l.tipo,         // Index 6 -> Col I
-            l.duracion,     // Index 7 -> Col J
-            finalDesc,      // Index 8 -> Col M (Observaciones limpias)
-            finalPuesto,    // Index 9 -> Col G
-            finalPersonas,  // Index 10 -> Col H
-            finalOperador   // Index 11 -> Nueva Col L (Operador)
+            finalUsuario,   // 0 -> Col A
+            todayStr,       // 1 -> Col B
+            l.timestamp,    // 2 -> Col C
+            finalSector,    // 3 -> Col D
+            finalOrden,     // 4 -> Col E
+            finalMaterial,  // 5 -> Col F
+            finalPuesto,    // 6 -> Col G
+            finalPersonas,  // 7 -> Col H
+            l.tipo,         // 8 -> Col I
+            l.duracion,     // 9 -> Col J
+            "",             // 10 -> Col K (Acumulado)
+            finalOperador,  // 11 -> Col L (Operador)
+            finalDesc       // 12 -> Col M (Observaciones)
         ];
     });
 
