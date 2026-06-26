@@ -20,6 +20,7 @@
   label { font-size: 13px; color: #aeaeb2; font-weight: 500; }
   select, input, textarea { font-size: 16px; color: #f2f2f7; background: #2c2c2e; border: 1.5px solid transparent; border-radius: 10px; padding: 10px 12px; width: 100%; font-family: inherit; }
   select:focus, input:focus, textarea:focus { outline: none; border-color: #636366; background: #3a3a3c; }
+  textarea { resize: vertical; min-height: 70px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   
   .log-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #f2f2f7; }
@@ -54,7 +55,7 @@
     <div class="timer" id="display">00:00:00</div>
     <div class="btn-row">
       <button class="primary" id="btnToggle" onclick="toggleTimer()">Iniciar</button>
-      <button onclick="resetTimer()">Reiniciar</button>
+      <button onclick="preguntarReinicio()">Reiniciar</button>
     </div>
     <div class="grid2">
         <div class="field"><label>Usuario</label><input type="text" id="usuario" placeholder="Tu nombre" /></div>
@@ -81,7 +82,10 @@
     </div>
     <div class="grid2">
       <div class="field"><label>Cantidad de Personas</label><input type="number" id="personas" value="1" min="1" /></div>
-      <div class="field"><label>Descripción</label><input type="text" id="obs" placeholder="Detalle de la tarea..." /></div>
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="obs" placeholder="Detalle de la tarea..." rows="2"></textarea>
     </div>
     <div class="field">
       <label>Tipo de Tarea (Presionar para guardar tramo)</label>
@@ -130,7 +134,10 @@
     </div>
     <div class="grid2">
       <div class="field"><label>Cant. de Personas</label><input type="number" id="editPersonas" min="1" /></div>
-      <div class="field"><label>Descripción</label><input type="text" id="editObs" /></div>
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="editObs" rows="2"></textarea>
     </div>
     <div class="field">
       <label>Tipo de Tarea</label>
@@ -158,7 +165,6 @@
 
   function fmt(s) { return new Date(s * 1000).toISOString().substr(11, 8); }
 
-  // GUARDA EL ESTADO DEL RELOJ EN EL DISCO DURO DEL TELÉFONO
   function saveTimerState() {
     localStorage.setItem('timer_state_v1', JSON.stringify({
       running: running,
@@ -167,7 +173,6 @@
     }));
   }
 
-  // RECUPERA EL RELOJ SI EL NAVEGADOR REINICIA LA PESTAÑA
   function loadTimerState() {
     const saved = localStorage.getItem('timer_state_v1');
     if (saved) {
@@ -179,7 +184,7 @@
       if (running && startTime) {
         interval = setInterval(tick, 500);
         document.getElementById('btnToggle').textContent = 'Pausar';
-        tick(); // Refresca pantalla al instante
+        tick(); 
       } else if (!running && accumulatedSeconds > 0) {
         seconds = accumulatedSeconds;
         document.getElementById('display').textContent = fmt(seconds);
@@ -208,6 +213,16 @@
     let elapsed = Math.floor((Date.now() - startTime) / 1000);
     seconds = accumulatedSeconds + elapsed;
     document.getElementById('display').textContent = fmt(seconds);
+  }
+
+  function preguntarReinicio() {
+    if (seconds > 0 || running) {
+      if (confirm("¿Estás seguro de que querés reiniciar el cronómetro? El tiempo actual se perderá.")) {
+        resetTimer();
+      }
+    } else {
+      resetTimer(); // Si está en 0 y pausado, no necesita confirmación
+    }
   }
 
   function resetTimer() { 
@@ -248,6 +263,9 @@
     logs.push(rec);
     localStorage.setItem('timelogs_v5', JSON.stringify(logs));
     
+    // Limpiamos SOLO el campo descripción de la pantalla principal
+    document.getElementById('obs').value = '';
+    
     resetTimer();
     renderLogs();
     showToast("Tramo guardado localmente");
@@ -259,8 +277,9 @@
       document.getElementById('logArea').innerHTML = '<p style="color:#636366; text-align:center; padding:10px;">Sin registros aún</p>';
       return;
     }
+    // Hacemos una copia de los logs y la invertimos solo para la vista (último a primero)
     const html = '<table class="log-table"><tr><th>Tipo</th><th>Desc.</th><th>Durac.</th><th></th></tr>' +
-      logs.map(l => `
+      [...logs].reverse().map(l => `
         <tr>
           <td>${l.tipo}</td>
           <td>${l.desc}</td>
@@ -365,7 +384,7 @@
         return;
     }
 
-    if (running) { clearInterval(interval); running = false; }
+    if (running) { clearInterval(interval); running = false; saveTimerState(); }
     resetTimer(); document.getElementById('btnToggle').textContent = 'Iniciar';
 
     const btn = document.getElementById('btnSheets'); btn.disabled = true; btn.textContent = 'Subiendo...';
@@ -422,7 +441,6 @@
     e.target.value = formatted;
   });
 
-  // RECUPERA EL ESTADO DEL RELOJ INMEDIATAMENTE AL ABRIR LA APP
   loadTimerState();
   renderLogs();
 </script>
